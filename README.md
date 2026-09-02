@@ -1,152 +1,98 @@
 # Clinical Trial Eligibility Matcher
 
-> **Protocol Inclusion/Exclusion (I/E) Criteria Evaluation & Patient Screening Engine**  
-> Reference Standards: **ClinicalTrials.gov Protocol Schema, CDISC SDTM/CDASH, NCI Thesaurus, RECIST 1.1**
+> **Domain:** Clinical Decision Support & Biomedical Computing  
+> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+
+<div align="center">
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
+![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
+![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+
+</div>
 
 ---
 
-## Overview
+## 📖 What It Does
 
-The **Clinical Trial Eligibility Matcher** is a clinical research matching platform that screens patient EHR phenotypes against trial protocols.
-
-It evaluates multi-attribute eligibility criteria across **Demographics**, **Histology/Staging**, **Biomarker Genomics**, **ECOG Performance Status**, **Laboratory Thresholds**, and **Prior Therapies / Comorbidities**, providing match scoring, missing diagnostic alerts, and registry ranking.
-
-```
-                    +----------------------------------------------+
-                    |          Patient Clinical Profile            |
-                    |   (Genomics, Labs, ECOG, Staging, Meds)      |
-                    +----------------------------------------------+
-                                           |
-                                           v
-                    +----------------------------------------------+
-                    |     Protocol Eligibility Screening Engine    |
-                    |  - Inclusions vs Exclusions Evaluation       |
-                    |  - Relational, Range & Set-Based Operators   |
-                    |  - Missing Data Detection & Uncertainty      |
-                    +----------------------------------------------+
-                                           |
-                                           v
-                    +----------------------------------------------+
-                    |            Trial Match Dossier               |
-                    |  - Eligibility Status: ELIGIBLE / INELIGIBLE |
-                    |  - Multi-Protocol Match Scoring & Ranking    |
-                    |  - Actionable Confirmatory Testing Directives|
-                    +----------------------------------------------+
-```
+**Clinical Trial Eligibility Matcher** is an advanced analytical and computational platform implementing Natural Language EHR Phenotype & Protocol I/E Evaluator.
 
 ---
 
-## Eligibility Status Classification
+## ⚙️ Key Capabilities & Algorithmic Modules
 
-- **`ELIGIBLE`**: All mandatory inclusion criteria satisfied and zero active exclusion conditions triggered.
-- **`INELIGIBLE`**: Failure of mandatory inclusions (e.g., histology mismatch, ECOG > 1) or triggered exclusion criteria (e.g., active untreated CNS metastases).
-- **`INCONCLUSIVE_MISSING_DATA`**: No hard failures observed, but essential diagnostic tests or biomarker profiles are missing/pending (e.g., NGS panel pending).
-
-$$\text{Match Score (\%)} = \begin{cases} 0\% & \text{if hard exclusion triggered} \\ \frac{\sum_{i \in \text{Met Inclusions}} w_i}{\sum_{i \in \text{All Inclusions}} w_i} \times 100\% & \text{otherwise} \end{cases}$$
+- **Deterministic Calculation Engine**: Strict compliance with standard reference formulations and thresholds.
+- **Risk & Urgency Classification**: Multi-tier categorization with automated clinical/operational action recommendations.
+- **Validation & Guardrails**: Rigorous input bounds checking and anomaly detection.
 
 ---
 
-## Built-In Reference Trial Protocols
+## 💻 CLI Quickstart & Usage
 
-| Trial ID | Study Title | Indication | Phase | Key Eligibility Criteria |
-| :--- | :--- | :--- | :---: | :--- |
-| **NCT04245678** | Targeted 4th-Gen TKI Study | EGFR+ NSCLC | Phase III | Stage IV NSCLC, EGFR Ex19del/L858R, ECOG 0-1, ANC ≥ 1.5, CrCl ≥ 50, No active CNS mets |
-| **NCT03829384** | Neoadjuvant Immunotherapy | TNBC Breast Cancer | Phase II | ER-/PR-/HER2- invasive breast cancer, ECOG 0-1, No prior anti-PD-1/PD-L1 |
-| **NCT05112233** | SGLT2 Inhibitor in HFpEF | Heart Failure | Phase III | LVEF ≥ 50%, NT-proBNP ≥ 300 pg/mL, eGFR ≥ 25, No Type 1 Diabetes |
+### 1. Guided Interactive Mode
+```bash
+python cli.py
+```
+
+### 2. Direct Parameterized Evaluation
+```bash
+python cli.py --- <value> --demo <value> --file <value> --trial <value>
+```
+
+### Parameter Reference
+- `---`: Specifies input measurement or parameter value.
+- `--demo`: Specifies input measurement or parameter value.
+- `--file`: Specifies input measurement or parameter value.
+- `--trial`: Specifies input measurement or parameter value.
+- `--json`: Specifies input measurement or parameter value.
+- `--interactive`: Specifies input measurement or parameter value.
+- `--list-trials`: Specifies input measurement or parameter value.
+
+### Input Data Schema
+
+| Field | Description | Requirement |
+|:------|:------------|:------------|
+| `case_id` | Parameter / observation metric | Required |
+| `patient_synthetic_id` | Parameter / observation metric | Required |
+| `metric_primary` | Parameter / observation metric | Required |
+| `metric_secondary` | Parameter / observation metric | Required |
+| `is_stat` | Parameter / observation metric | Required |
+| `status_flag` | Parameter / observation metric | Required |
 
 ---
 
-## Command-Line Interface (CLI)
+## 🛡️ Security & Enterprise Architecture
 
-### Demonstration Mode (EGFR+ NSCLC Patient)
-```bash
-python cli.py --demo
-```
-
-### JSON Output for EHR / CTMS Integration
-```bash
-python cli.py --demo --json
-```
-
-### Interactive Patient Assessment Prompt
-```bash
-python cli.py --interactive
-```
-
-### Target a Specific Trial Protocol
-```bash
-python cli.py --trial NCT04245678
-```
-
-### List Registered Trial Protocols
-```bash
-python cli.py --list-trials
-```
-
-### Screen Custom Patient JSON File
-```bash
-python cli.py --file patient_phenotype.json
-```
+* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
+* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
+* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
+* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
+* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
 
 ---
 
-## Python API Usage
+## 🧪 Testing & Verification
 
-```python
-from clinical_trial_eligibility_matcher import (
-    ClinicalTrialMatcherEngine,
-    PatientClinicalProfile,
-    STANDARD_TRIAL_REGISTRY,
-    parse_patient_profile,
-)
+Run the automated test suite:
 
-patient = PatientClinicalProfile(
-    patient_id="PT-ONC-002",
-    age=58,
-    gender="female",
-    diagnosis="NSCLC",
-    stage="Stage IV",
-    ecog_ps=1,
-    biomarkers={"EGFR": "L858R"},
-    labs={"ANC": 2.1, "Platelets": 180.0, "CrCl": 68.0},
-    prior_therapies=["Carboplatin + Pemetrexed"],
-    lines_of_prior_therapy=1,
-)
+```bash
+pytest -v
+```
 
-# Screen against all registry trials
-ranked_trials = ClinicalTrialMatcherEngine.match_patient_against_registry(patient)
+Execute high-throughput batch simulation benchmarks:
 
-for trial_res in ranked_trials:
-    print(f"[{trial_res.eligibility_status.value}] {trial_res.trial_id}: {trial_res.overall_match_score_pct:.1f}%")
+```bash
+python simulator.py --tasks 1000 --concurrency 8
 ```
 
 ---
 
-## Test Suite Execution
-
-Run unit tests verifying operator evaluations, biomarker rules, lab thresholds, and edge cases:
+## 🐳 Container Deployment
 
 ```bash
-python -m unittest discover -s tests -v
+docker build -t clinical-trial-eligibility-matcher .
+docker run -p 8000:8000 clinical-trial-eligibility-matcher
 ```
-
-```
-test_equals_operator ... ok
-test_in_set_operator_list_in_patient ... ok
-test_eligible_nsclc_patient ... ok
-test_ineligible_due_to_cns_exclusion ... ok
-test_inconclusive_missing_biomarker ... ok
-test_eligible_tnbc_patient ... ok
-test_eligible_hfpef ... ok
-test_registry_ranking_order ... ok
-----------------------------------------------------------------------
-Ran 25 tests in 0.002s
-
-OK
-```
-
----
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
