@@ -335,5 +335,53 @@ class TestRegistryRankingAndParser(unittest.TestCase):
         self.assertEqual(res.overall_match_score_pct, 100.0)
 
 
+class TestCLIBatchProcessing(unittest.TestCase):
+    """Test CLI batch CSV parsing and execution."""
+
+    def test_parse_patient_from_csv_row(self):
+        from cli import parse_patient_from_csv_row
+        row = {
+            "patient_id": "PT-CSV-01",
+            "age": "60",
+            "gender": "female",
+            "diagnosis": "NSCLC",
+            "stage": "Stage IV",
+            "histology": "Adenocarcinoma",
+            "ecog_ps": "1",
+            "biomarkers": '{"EGFR": "L858R"}',
+            "labs": '{"ANC": 2.5, "CrCl": 70.0}',
+            "prior_therapies": "Carboplatin; Pemetrexed",
+            "lines_of_prior_therapy": "1",
+            "comorbidities": "Hypertension, Hyperlipidemia",
+        }
+        pt = parse_patient_from_csv_row(row)
+        self.assertEqual(pt.patient_id, "PT-CSV-01")
+        self.assertEqual(pt.age, 60)
+        self.assertEqual(pt.biomarkers["EGFR"], "L858R")
+        self.assertEqual(pt.labs["ANC"], 2.5)
+        self.assertEqual(len(pt.prior_therapies), 2)
+        self.assertEqual(len(pt.comorbidities), 2)
+
+    def test_run_batch_processing(self):
+        import tempfile
+        from cli import run_batch_processing
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as out_f:
+            out_path = out_f.name
+
+        try:
+            run_batch_processing("sample.csv", out_path)
+            self.assertTrue(os.path.exists(out_path))
+            with open(out_path, mode="r", encoding="utf-8") as f:
+                lines = f.readlines()
+            # 1 header + 4 data rows
+            self.assertEqual(len(lines), 5)
+            self.assertIn("top_match_trial_id", lines[0])
+            self.assertIn("ELIGIBLE", lines[1])
+        finally:
+            if os.path.exists(out_path):
+                os.remove(out_path)
+
+
 if __name__ == "__main__":
     unittest.main()

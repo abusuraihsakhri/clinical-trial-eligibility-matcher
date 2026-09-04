@@ -1,4 +1,5 @@
-case_id,patient_synthetic_id,metric_primary,metric_secondary,is_stat,status_flag
-CASE-001,SYNTH-01,25.4,14.2,True,DISCORDANT
-CASE-002,SYNTH-02,12.0,4.1,False,NORMAL
-CASE-003,SYNTH-03,32.0,18.5,True,SUSPICIOUS
+patient_id,age,gender,diagnosis,stage,histology,ecog_ps,biomarkers,labs,prior_therapies,lines_of_prior_therapy,comorbidities
+PT-001,62,female,NSCLC,Stage IV,Adenocarcinoma,1,"{""EGFR"": ""L858R"", ""PD-L1"": 45.0}","{""ANC"": 2.4, ""Platelets"": 195.0, ""CrCl"": 72.0}",Carboplatin + Pemetrexed,1,Hypertension (Controlled)
+PT-002,48,female,Breast Cancer,Stage II,Invasive Ductal,0,"{""ER"": ""negative"", ""PR"": ""negative"", ""HER2"": ""negative""}","{""ANC"": 2.8, ""Platelets"": 230.0, ""CrCl"": 88.0}",Doxorubicin + Cyclophosphamide,1,None
+PT-003,67,male,Heart Failure,NYHA III,Cardiomyopathy,1,"{""LVEF"": 52.0}","{""NT_proBNP"": 480.0, ""eGFR"": 58.0}",Furosemide + Lisinopril,2,Hypertension
+PT-004,59,male,NSCLC,Stage IV,Squamous Cell,2,"{""EGFR"": ""Wildtype""}","{""ANC"": 1.1, ""Platelets"": 85.0, ""CrCl"": 42.0}",Cisplatin + Gemcitabine; Docetaxel,2,Active CNS Metastases
