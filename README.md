@@ -1,5 +1,7 @@
 # Clinical Trial Eligibility Matcher
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/clinical-trial-eligibility-matcher/)
+
 A deterministic Python rule engine for evaluating structured patient data against bundled inclusion and exclusion criteria.
 
 > **Important:** The bundled protocols are illustrative software examples. They are not synchronized with ClinicalTrials.gov and must not be used as authoritative trial eligibility criteria. Any real screening decision requires review of the current study protocol by qualified trial staff.
