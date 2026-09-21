@@ -4,24 +4,32 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clinical-trial-eligibility-matcher"
-version = "2.0.0"
-description = "TrialMatcher AI: Natural Language EHR Phenotype & Protocol Inclusion/Exclusion Engine"
+version = "2.1.0"
+description = "Deterministic matcher for structured clinical trial inclusion and exclusion criteria"
 readme = "README.md"
-authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
+authors = [{ name = "NAME" }]
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.9"
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
 [project.scripts]
-clinical-trial-eligibility-matcher = "clinical_trial_eligibility_matcher.cli:main"
+clinical-trial-eligibility-matcher = "cli:main"
 
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/clinical-trial-eligibility-matcher"
 Repository = "https://github.com/abusuraihsakhri/clinical-trial-eligibility-matcher.git"
+
+[tool.setuptools]
+py-modules = ["cli"]
+
+[tool.setuptools.packages.find]
+include = ["clinical_trial_eligibility_matcher*"]
