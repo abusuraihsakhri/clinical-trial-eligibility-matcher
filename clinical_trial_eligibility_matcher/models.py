@@ -1,12 +1,10 @@
 """
-Data Models & Criteria Definitions for Clinical Trial Eligibility Matching.
-Domain: Clinical Trial Protocol Matching & Patient Phenotyping
-Standards: CDISC SDTM/CDASH, NCI Thesaurus, ClinicalTrials.gov Protocol Specifications
+Data models and criteria definitions for clinical trial eligibility matching.
 """
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Any, Union
+from typing import Any, Dict, List, Optional
 
 
 class CriterionType(str, Enum):
@@ -50,7 +48,7 @@ class TrialCriterion:
     description: str
     criterion_type: CriterionType
     category: CriterionCategory
-    field_path: str  # e.g., 'age', 'ecog_ps', 'biomarkers.EGFR', 'labs.ANC', 'prior_therapies'
+    field_path: str
     operator: CriterionOperator
     expected_value: Any
     weight: float = 1.0
@@ -59,9 +57,9 @@ class TrialCriterion:
 
 @dataclass
 class ClinicalTrialProtocol:
-    trial_id: str  # e.g., 'NCT04245678'
+    trial_id: str
     title: str
-    phase: str  # e.g., 'Phase III', 'Phase II'
+    phase: str
     indication: str
     sponsor: str
     target_enrollment: int
@@ -71,17 +69,17 @@ class ClinicalTrialProtocol:
 @dataclass
 class PatientClinicalProfile:
     patient_id: str
-    age: int
-    gender: str
-    diagnosis: str
+    age: Optional[int]
+    gender: Optional[str]
+    diagnosis: Optional[str]
     stage: Optional[str] = None
     histology: Optional[str] = None
-    ecog_ps: int = 0
+    ecog_ps: Optional[int] = None
     biomarkers: Dict[str, Any] = field(default_factory=dict)
     labs: Dict[str, float] = field(default_factory=dict)
-    prior_therapies: List[str] = field(default_factory=list)
-    lines_of_prior_therapy: int = 0
-    comorbidities: List[str] = field(default_factory=list)
+    prior_therapies: Optional[List[str]] = None
+    lines_of_prior_therapy: Optional[int] = None
+    comorbidities: Optional[List[str]] = None
 
 
 @dataclass
