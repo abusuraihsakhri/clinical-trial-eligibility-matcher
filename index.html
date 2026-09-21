@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browser-based interface for structured clinical trial eligibility matching.">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-eval' 'wasm-unsafe-eval'; connect-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Clinical Trial Eligibility Matcher</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Structured protocol screening</p>
+        <h1>Clinical Trial Eligibility Matcher</h1>
+        <p class="subtitle">Deterministic inclusion/exclusion checks using the bundled demonstration protocols.</p>
+      </div>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode">Dark</button>
+    </header>
+
+    <section class="notice" aria-label="Important limitation">
+      <strong>Demonstration only.</strong>
+      The bundled protocols are illustrative and are not a live ClinicalTrials.gov feed. Confirm any real screening decision against the authoritative current protocol.
+    </section>
+
+    <section class="workspace">
+      <form id="patient-form" class="panel form-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Patient profile</h2>
+            <p>Blank clinical fields remain unknown and can make a result inconclusive.</p>
+          </div>
+          <button id="sample-button" class="secondary-button" type="button">Load sample</button>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            <span>Patient ID</span>
+            <input id="patient_id" name="patient_id" value="PT-001" autocomplete="off">
+          </label>
+          <label>
+            <span>Age</span>
+            <input id="age" name="age" type="number" min="0" max="125" inputmode="numeric">
+          </label>
+          <label>
+            <span>Sex / gender</span>
+            <input id="gender" name="gender" autocomplete="off">
+          </label>
+          <label>
+            <span>Diagnosis</span>
+            <input id="diagnosis" name="diagnosis" placeholder="e.g. NSCLC" autocomplete="off">
+          </label>
+          <label>
+            <span>Stage</span>
+            <input id="stage" name="stage" placeholder="e.g. Stage IV" autocomplete="off">
+          </label>
+          <label>
+            <span>ECOG PS</span>
+            <input id="ecog_ps" name="ecog_ps" type="number" min="0" max="5" inputmode="numeric">
+          </label>
+
+          <label class="wide">
+            <span>Biomarkers (JSON object)</span>
+            <textarea id="biomarkers" name="biomarkers" rows="2" spellcheck="false" placeholder='{"EGFR":"L858R"}'></textarea>
+          </label>
+          <label class="wide">
+            <span>Labs (JSON object)</span>
+            <textarea id="labs" name="labs" rows="2" spellcheck="false" placeholder='{"ANC":2.4,"Platelets":195,"CrCl":72}'></textarea>
+          </label>
+
+          <label class="wide">
+            <span>Prior therapies (semicolon-separated)</span>
+            <input id="prior_therapies" name="prior_therapies" placeholder="Carboplatin + Pemetrexed; Osimertinib" autocomplete="off">
+          </label>
+          <label>
+            <span>Prior therapy lines</span>
+            <input id="lines_of_prior_therapy" name="lines_of_prior_therapy" type="number" min="0" inputmode="numeric">
+          </label>
+          <label>
+            <span>Comorbidities</span>
+            <input id="comorbidities" name="comorbidities" placeholder="Comma-separated" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <label class="trial-filter">
+            <span>Protocol</span>
+            <select id="trial-filter" name="trial-filter">
+              <option value="">All bundled protocols</option>
+              <option value="NCT04245678">NCT04245678 — EGFR+ NSCLC</option>
+              <option value="NCT03829384">NCT03829384 — TNBC</option>
+              <option value="NCT05112233">NCT05112233 — HFpEF</option>
+            </select>
+          </label>
+          <button id="analyze-button" class="primary-button" type="submit">
+            <span>Analyze eligibility</span>
+          </button>
+        </div>
+        <p id="runtime-status" class="runtime-status" role="status">Loading Python runtime…</p>
+      </form>
+
+      <section class="panel results-panel" aria-live="polite" aria-busy="false">
+        <div class="panel-heading">
+          <div>
+            <h2>Results</h2>
+            <p id="result-summary">Run an analysis to view protocol matches.</p>
+          </div>
+        </div>
+        <div id="results" class="results-empty">
+          <p>No analysis yet.</p>
+        </div>
+      </section>
+    </section>
+
+    <footer>
+      <span>Runs locally in your browser. Patient data are not sent to this repository.</span>
+      <a href="https://github.com/abusuraihsakhri/clinical-trial-eligibility-matcher" rel="noopener noreferrer">Source</a>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
