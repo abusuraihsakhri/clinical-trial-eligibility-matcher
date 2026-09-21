@@ -35,11 +35,19 @@ jobs:
       - name: Compile sources
         run: python -m compileall -q cli.py clinical_trial_eligibility_matcher tests
 
+      - name: Check browser JavaScript
+        run: node --check app.js
+
       - name: Run tests
         run: python -m pytest -p no:zarr -q
 
-      - name: Verify installed CLI
-        run: clinical-trial-eligibility-matcher --list-trials
+      - name: Build package
+        run: python -m build
+
+      - name: Verify installed wheel and CLI
+        run: |
+          python -m pip install --force-reinstall dist/*.whl
+          clinical-trial-eligibility-matcher --list-trials
 
       - name: Batch smoke test
         run: |
