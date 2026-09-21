@@ -1,161 +1,111 @@
-# Clinical Trial Eligibility Matcher & Protocol Screener
+# Clinical Trial Eligibility Matcher
 
-> **Domain:** Clinical Research Informatics & Protocol Feasibility  
-> **Reference Guidelines & Standards:** CDISC SDTM/CDASH, NCI Thesaurus, ClinicalTrials.gov Protocol Registration System (PRS), Good Clinical Practice (ICH-GCP E6(R2))
+A deterministic Python rule engine for evaluating structured patient data against bundled inclusion and exclusion criteria.
 
-<div align="center">
+> **Important:** The bundled protocols are illustrative software examples. They are not synchronized with ClinicalTrials.gov and must not be used as authoritative trial eligibility criteria. Any real screening decision requires review of the current study protocol by qualified trial staff.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![Pytest Suite](https://img.shields.io/badge/Pytest-Passing-brightgreen.svg?logo=pytest&logoColor=white)
-![Standards](https://img.shields.io/badge/Standards-CDISC%20%7C%20NCI%20Thesaurus-blueviolet.svg)
+## What it does
 
-</div>
+- Evaluates structured inclusion and exclusion criteria.
+- Distinguishes **eligible**, **ineligible**, and **inconclusive due to missing data** states.
+- Reports criterion-level pass, fail, and missing-data results.
+- Supports JSON patient profiles, interactive CLI use, and CSV batch screening.
+- Provides a browser interface that runs the Python matcher locally with Pyodide.
+- Keeps missing clinical fields unknown instead of substituting clinically meaningful defaults.
 
----
+## Browser interface
 
-## 📖 Overview & Clinical Architecture
+The repository includes a static GitHub Pages interface in `index.html`.
 
-**Clinical Trial Eligibility Matcher** evaluates complex multi-dimensional patient phenotypes against structured clinical trial protocols. It models inclusion and exclusion (I/E) criteria across demographics, histopathology, molecular genomics/biomarkers, functional performance status, laboratory safety thresholds, prior therapeutic regimens, and medical comorbidities.
+The browser app loads Pyodide and the repository's Python matcher, then performs analysis locally in the browser. Patient values entered into the form are not submitted to a server by this application. Loading the Python runtime requires network access to the pinned Pyodide CDN.
 
-The engine executes deterministic multi-attribute rule checking, computes weighted eligibility scores, flags missing clinical attributes with confirmatory test recommendations, and triages eligible trial opportunities.
+## CLI
 
-```
-+-----------------------------------------------------------------------------+
-|                          PATIENT CLINICAL PHENOTYPE                         |
-|  - Demographics (Age, Gender)           - Genomics (EGFR, ER, PR, HER2)     |
-|  - Staging & Histology (Stage IV NSCLC) - Labs (ANC, Platelets, CrCl, BNP)  |
-|  - Performance Status (ECOG 0-4)        - Prior Regimens & Comorbidities    |
-+-------------------------------------+---------------------------------------+
-                                      |
-                                      v
-+-----------------------------------------------------------------------------+
-|                    ELIGIBILITY EVALUATION PIPELINE                          |
-|                                                                             |
-|  1. INCLUSION CRITERIA CHECK            2. EXCLUSION CRITERIA CHECK         |
-|     * All mandatory criteria met?          * Active contraindication?       |
-|     * Operator check (==, >=, <=, IN)      * Hard-stop exclusionary flag?   |
-|                                                                             |
-|  3. MISSING DATA AUDIT                  4. WEIGHTED MATCH SCORING           |
-|     * Missing required labs/genomics?      * S = (Earned Wt / Total Wt)     |
-|     * Inconclusive state classification    * Ranking: ELIGIBLE > INCONCLUSIVE|
-+-------------------------------------+---------------------------------------+
-                                      |
-                                      v
-+-----------------------------------------------------------------------------+
-|                     CLINICAL DECISION OUTPUT & TRIAGE                       |
-|  - Status: [ELIGIBLE] | [INCONCLUSIVE_MISSING_DATA] | [INELIGIBLE]          |
-|  - Match Score (%): 0.0% to 100.0%                                          |
-|  - Actionable Next Steps: Pre-screening consent vs. confirmatory diagnostic  |
-+-----------------------------------------------------------------------------+
-```
+Install for development:
 
----
-
-## 🔬 Mathematical Formulations & Criteria Logic
-
-### 1. Weighted Eligibility Score ($S_{match}$)
-
-For protocol $T$ with criteria set $C = \{c_1, c_2, \dots, c_n\}$ each assigned weight $w_i \ge 0$:
-
-$$S_{match} = \begin{cases} 0.0\% & \text{if any exclusion criterion is triggered} \\ \left( \frac{\sum_{i \in \text{Satisfied}} w_i}{\sum_{i=1}^n w_i} \right) \times 100 & \text{otherwise} \end{cases}$$
-
-### 2. Tri-State Eligibility Decision Hierarchy
-
-$$\text{Status}(P, T) = \begin{cases} 
-\text{INELIGIBLE} & \text{if } \exists c \in C_{exc} \text{ where } c(P) = \text{True, or } \exists c \in C_{inc}^{mand} \text{ where } c(P) = \text{False} \\
-\text{INCONCLUSIVE} & \text{if no exclusions triggered, no mandatory failed, but } \exists c \text{ where } \text{Data}(P, c) = \text{Missing} \\
-\text{ELIGIBLE} & \text{if } \forall c \in C_{inc}: c(P) = \text{True} \land \forall c \in C_{exc}: c(P) = \text{False}
-\end{cases}$$
-
----
-
-## 📋 Active Protocol Registry Specification
-
-The system includes pre-configured standard trial protocols representing major therapeutic areas:
-
-| Trial ID | Phase | Indication | Key Inclusion Criteria | Critical Exclusion Criteria |
-|:---------|:------|:-----------|:-----------------------|:----------------------------|
-| `NCT04245678` | Phase III | EGFR+ Advanced NSCLC | Age $\ge 18$, Stage IV NSCLC, activating EGFR (Ex19del/L858R), ECOG $\le 1$, ANC $\ge 1.5$, Platelets $\ge 100$, CrCl $\ge 50$ | Active CNS metastases, prior lines of therapy $> 2$ |
-| `NCT03829384` | Phase II | Triple-Negative Breast Cancer (TNBC) | Age $\ge 18$, Invasive Breast Carcinoma, ER(-), PR(-), HER2(-), ECOG $\le 1$ | Active autoimmune disease requiring steroids, prior anti-PD-(L)1 therapy |
-| `NCT05112233` | Phase III | HFpEF (Heart Failure) | Age $\ge 40$, Heart Failure, LVEF $\ge 50\%$, NT-proBNP $\ge 300$ pg/mL, eGFR $\ge 25$ mL/min/1.73m² | Type 1 Diabetes, severe ESRD on dialysis |
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Batch Cohort Screening (Recommended)
-Screen an entire patient cohort CSV against registered clinical trials:
 ```bash
-python cli.py batch -i sample.csv -o batch_results.csv
+python -m pip install -e ".[dev]"
 ```
-Or filter the batch evaluation to a single trial identifier:
+
+List the bundled protocols:
+
 ```bash
-python cli.py batch -i sample.csv -o batch_results.csv --trial NCT04245678
+clinical-trial-eligibility-matcher --list-trials
 ```
 
-### 2. Built-in Demonstration Mode
-Execute screening for a sample Stage IV EGFR-mutant NSCLC patient against the registry:
+Run the built-in sample:
+
 ```bash
-python cli.py --demo
+clinical-trial-eligibility-matcher --demo
 ```
 
-### 3. Screen from Patient JSON File
+Screen a JSON patient profile:
+
 ```bash
-python cli.py --file patient_profile.json
+clinical-trial-eligibility-matcher --file patient.json --json
 ```
-Export structured JSON results for EHR/EDC integration:
+
+Batch-screen a CSV file:
+
 ```bash
-python cli.py --file patient_profile.json --json
+clinical-trial-eligibility-matcher batch -i sample.csv -o results.csv
 ```
 
-### 4. Interactive Clinical Screening Prompt
-Launch an interactive questionnaire to evaluate a patient in real time:
+Filter to one bundled protocol:
+
 ```bash
-python cli.py --interactive
+clinical-trial-eligibility-matcher batch -i sample.csv -o results.csv --trial NCT04245678
 ```
 
-### 5. List Registered Trial Protocols
+## Input conventions
+
+Patient profiles can contain demographics, diagnosis/stage, ECOG performance status, biomarkers, laboratory values, prior therapies, therapy-line count, and comorbidities.
+
+For CSV input:
+
+- `biomarkers` and `labs` are JSON objects.
+- `prior_therapies` is semicolon-separated.
+- `comorbidities` is comma-separated.
+- Blank clinical fields remain missing and can produce an inconclusive result.
+- Invalid JSON or non-numeric numeric fields fail with an explicit validation error.
+
+See `sample.csv` for a complete example.
+
+## Development and testing
+
+The project has no runtime Python dependencies outside the standard library.
+
+Run the test suite:
+
 ```bash
-python cli.py --list-trials
+python -m pytest -p no:zarr -q
 ```
 
----
+Compile-check the Python sources:
 
-## 📊 Patient Data Schema (`sample.csv`)
-
-| Field | Type | Description / Accepted Format | Example |
-|:------|:-----|:------------------------------|:--------|
-| `patient_id` | String | Unique synthetic patient identifier | `PT-001` |
-| `age` | Integer | Patient age in years | `62` |
-| `gender` | String | Patient sex (`male`, `female`, `other`) | `female` |
-| `diagnosis` | String | Primary diagnostic indication | `NSCLC`, `Breast Cancer`, `Heart Failure` |
-| `stage` | String | Disease staging classification | `Stage IV`, `Stage II` |
-| `histology` | String | Microscopic histology subtype | `Adenocarcinoma`, `Invasive Ductal` |
-| `ecog_ps` | Integer | ECOG Performance Status score (0 to 4) | `0` (Fully active), `1` (Restricted) |
-| `biomarkers` | JSON Dict | Genomic mutations, IHC receptor status, functional indices | `{"EGFR": "L858R", "PD-L1": 45.0}` |
-| `labs` | JSON Dict | Serum laboratory chemistry and hematology | `{"ANC": 2.4, "Platelets": 195.0, "CrCl": 72.0}` |
-| `prior_therapies` | String | Semicolon-delimited prior systemic regimens | `Carboplatin + Pemetrexed; Osimertinib` |
-| `lines_of_prior_therapy` | Integer | Total completed systemic therapy lines | `1` |
-| `comorbidities` | String | Comorbid diagnoses | `Hypertension (Controlled), Active CNS Metastases` |
-
----
-
-## 🧪 Testing & Verification
-
-Run the full pytest suite:
 ```bash
-python -m pytest -p no:zarr -v
+python -m compileall -q cli.py clinical_trial_eligibility_matcher tests
 ```
 
-Execute the batch smoke verification:
-```bash
-python cli.py batch -i sample.csv -o out_smoke.csv
-```
+The GitHub Actions CI matrix tests Python 3.9 through 3.12, installs the package, verifies the console entry point, and runs a batch smoke test.
 
----
+## Technology
 
-## 📄 License
+- Python standard library
+- `dataclasses`-based domain models
+- Pytest for regression tests
+- Static HTML/CSS/JavaScript browser UI
+- Pyodide for running the Python matcher in-browser
+- GitHub Actions for CI and GitHub Pages deployment
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Browser compatibility
 
+The web interface requires a modern browser with WebAssembly support and JavaScript enabled. Initial page use downloads the Pyodide runtime; subsequent matcher execution occurs locally.
+
+## Privacy
+
+The CLI reads local files only. The browser interface does not transmit patient form data to the repository or a project backend. Do not use real identifiable patient information unless your local workflow and applicable governance requirements permit it.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

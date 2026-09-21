@@ -1,24 +1,27 @@
 """
-Clinical Trial Eligibility Matcher Engine & Protocol Registry
-Domain: Clinical Trial Protocol Matching & Patient Phenotyping
-Standards: CDISC SDTM/CDASH, NCI Thesaurus, ClinicalTrials.gov Protocol Specifications
+Clinical trial eligibility matcher engine and bundled demonstration registry.
+
+The bundled protocols are illustrative examples for software testing and demonstration.
+They are not a live ClinicalTrials.gov registry and must not be used as a substitute
+for protocol review by qualified trial staff.
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from .models import (
-    CriterionType,
-    CriterionCategory,
-    CriterionOperator,
-    EligibilityStatus,
-    TrialCriterion,
     ClinicalTrialProtocol,
-    PatientClinicalProfile,
+    CriterionCategory,
     CriterionEvaluationResult,
+    CriterionOperator,
+    CriterionType,
+    EligibilityStatus,
+    PatientClinicalProfile,
+    TrialCriterion,
     TrialMatchResult,
 )
 
 
-# Standard Reference Trial Protocol Registry
+# Illustrative protocol registry used by the CLI, tests, and browser demo.
 STANDARD_TRIAL_REGISTRY: List[ClinicalTrialProtocol] = [
     ClinicalTrialProtocol(
         trial_id="NCT04245678",
@@ -38,7 +41,7 @@ STANDARD_TRIAL_REGISTRY: List[ClinicalTrialProtocol] = [
             TrialCriterion("INC_CRCL", "Creatinine Clearance / eGFR >= 50 mL/min", CriterionType.INCLUSION, CriterionCategory.LAB_VALUE, "labs.CrCl", CriterionOperator.GREATER_EQUAL, 50.0),
             TrialCriterion("EXC_CNS", "Symptomatic or untreated CNS/brain metastases", CriterionType.EXCLUSION, CriterionCategory.COMORBIDITY, "comorbidities", CriterionOperator.IN_SET, "Active CNS Metastases"),
             TrialCriterion("EXC_LINES", "Prior systemic lines of therapy > 2", CriterionType.EXCLUSION, CriterionCategory.PRIOR_THERAPY, "lines_of_prior_therapy", CriterionOperator.GREATER_THAN, 2),
-        ]
+        ],
     ),
     ClinicalTrialProtocol(
         trial_id="NCT03829384",
@@ -56,7 +59,7 @@ STANDARD_TRIAL_REGISTRY: List[ClinicalTrialProtocol] = [
             TrialCriterion("INC_ECOG", "ECOG Performance Status 0-1", CriterionType.INCLUSION, CriterionCategory.PERFORMANCE_STATUS, "ecog_ps", CriterionOperator.LESS_EQUAL, 1),
             TrialCriterion("EXC_AUTOIMMUNE", "Active autoimmune disease requiring systemic steroids", CriterionType.EXCLUSION, CriterionCategory.COMORBIDITY, "comorbidities", CriterionOperator.IN_SET, "Autoimmune Disease"),
             TrialCriterion("EXC_PRIOR_IO", "Prior exposure to anti-PD-1 or anti-PD-L1 antibodies", CriterionType.EXCLUSION, CriterionCategory.PRIOR_THERAPY, "prior_therapies", CriterionOperator.IN_SET, "Pembrolizumab"),
-        ]
+        ],
     ),
     ClinicalTrialProtocol(
         trial_id="NCT05112233",
@@ -73,21 +76,19 @@ STANDARD_TRIAL_REGISTRY: List[ClinicalTrialProtocol] = [
             TrialCriterion("INC_EGFR", "eGFR >= 25 mL/min/1.73m2", CriterionType.INCLUSION, CriterionCategory.LAB_VALUE, "labs.eGFR", CriterionOperator.GREATER_EQUAL, 25.0),
             TrialCriterion("EXC_T1D", "Diagnosis of Type 1 Diabetes Mellitus", CriterionType.EXCLUSION, CriterionCategory.COMORBIDITY, "comorbidities", CriterionOperator.IN_SET, "Type 1 Diabetes"),
             TrialCriterion("EXC_ESRD", "Severe end-stage renal disease on dialysis", CriterionType.EXCLUSION, CriterionCategory.COMORBIDITY, "comorbidities", CriterionOperator.IN_SET, "End-Stage Renal Disease"),
-        ]
+        ],
     ),
 ]
 
 
 class ClinicalTrialMatcherEngine:
-    """
-    Algorithmic Matcher for Clinical Trial Inclusion/Exclusion Criteria.
-    """
+    """Deterministic matcher for structured inclusion and exclusion criteria."""
 
     @classmethod
-    def evaluate_criterion(cls, criterion: TrialCriterion, patient: PatientClinicalProfile) -> CriterionEvaluationResult:
-        """
-        Evaluate a single criterion against patient clinical attributes.
-        """
+    def evaluate_criterion(
+        cls, criterion: TrialCriterion, patient: PatientClinicalProfile
+    ) -> CriterionEvaluationResult:
+        """Evaluate one criterion against a patient profile."""
         val, exists = cls._extract_field_value(patient, criterion.field_path)
 
         if not exists or val is None:
@@ -106,16 +107,21 @@ class ClinicalTrialMatcherEngine:
 
         passed = cls._apply_operator(val, criterion.operator, criterion.expected_value)
 
-        # For EXCLUSION criteria:
-        # If passed == True, that means the exclusion condition IS present (which is bad -> exclusion triggered!)
-        # So from an eligibility standpoint, avoiding exclusion means passed should be False!
         if criterion.criterion_type == CriterionType.EXCLUSION:
             exclusion_triggered = passed
             passed_eligibility = not exclusion_triggered
-            msg = "Exclusion condition avoided" if passed_eligibility else f"Exclusion triggered: {criterion.description} (Observed: {val})"
+            msg = (
+                "Exclusion condition avoided"
+                if passed_eligibility
+                else f"Exclusion triggered: {criterion.description} (Observed: {val})"
+            )
         else:
             passed_eligibility = passed
-            msg = "Inclusion met" if passed_eligibility else f"Inclusion failed: Expected {criterion.operator.value} {criterion.expected_value}, got {val}"
+            msg = (
+                "Inclusion met"
+                if passed_eligibility
+                else f"Inclusion failed: Expected {criterion.operator.value} {criterion.expected_value}, got {val}"
+            )
 
         return CriterionEvaluationResult(
             criterion_id=criterion.criterion_id,
@@ -134,9 +140,7 @@ class ClinicalTrialMatcherEngine:
     def match_patient_to_trial(
         cls, patient: PatientClinicalProfile, trial: ClinicalTrialProtocol
     ) -> TrialMatchResult:
-        """
-        Match a patient profile against all criteria of a clinical trial.
-        """
+        """Match a patient profile against every criterion in one protocol."""
         eval_results: List[CriterionEvaluationResult] = []
         inclusions_met = 0
         inclusions_total = 0
@@ -145,54 +149,68 @@ class ClinicalTrialMatcherEngine:
         missing_count = 0
         has_exclusion_triggered = False
         has_mandatory_inclusion_failed = False
-
         total_weight = 0.0
         earned_weight = 0.0
 
         for crit in trial.criteria:
+            if crit.weight < 0:
+                raise ValueError(f"Criterion weight must be non-negative: {crit.criterion_id}")
+
             res = cls.evaluate_criterion(crit, patient)
             eval_results.append(res)
             total_weight += crit.weight
 
+            if res.is_missing_data:
+                missing_count += 1
+                if crit.criterion_type == CriterionType.INCLUSION:
+                    inclusions_total += 1
+                else:
+                    exclusions_total += 1
+                # Missing exclusion data must never be treated as an avoided exclusion.
+                continue
+
             if crit.criterion_type == CriterionType.INCLUSION:
                 inclusions_total += 1
-                if res.is_missing_data:
-                    missing_count += 1
-                elif res.passed:
+                if res.passed:
                     inclusions_met += 1
                     earned_weight += crit.weight
-                else:
-                    if crit.is_mandatory:
-                        has_mandatory_inclusion_failed = True
+                elif crit.is_mandatory:
+                    has_mandatory_inclusion_failed = True
             else:
                 exclusions_total += 1
-                if res.is_missing_data:
-                    # Missing data on exclusion -> noted but not hard failure unless specified
-                    exclusions_avoided += 1
-                    earned_weight += crit.weight
-                elif res.passed:
+                if res.passed:
                     exclusions_avoided += 1
                     earned_weight += crit.weight
                 else:
                     has_exclusion_triggered = True
 
-        next_steps = []
+        weighted_score = (earned_weight / total_weight * 100.0) if total_weight > 0 else 0.0
+        next_steps: List[str] = []
+
         if has_exclusion_triggered:
             status = EligibilityStatus.INELIGIBLE
             match_score = 0.0
-            next_steps.append("Patient has active exclusion criteria; investigate alternative trial protocols.")
+            next_steps.append("One or more exclusion criteria are present; review alternative protocols.")
         elif has_mandatory_inclusion_failed:
             status = EligibilityStatus.INELIGIBLE
-            match_score = (earned_weight / total_weight * 100.0) if total_weight > 0 else 0.0
-            next_steps.append("Patient does not satisfy essential inclusion criteria.")
+            match_score = weighted_score
+            next_steps.append("One or more mandatory inclusion criteria are not satisfied.")
         elif missing_count > 0:
             status = EligibilityStatus.INCONCLUSIVE_MISSING_DATA
-            match_score = (earned_weight / total_weight * 100.0) if total_weight > 0 else 0.0
-            next_steps.append(f"Order missing confirmatory testing: {missing_count} criteria require additional diagnostics.")
+            match_score = weighted_score
+            missing_fields = sorted(
+                {r.field_path for r in eval_results if r.is_missing_data}
+            )
+            next_steps.append(
+                "Eligibility cannot be determined until missing protocol data are resolved: "
+                + ", ".join(missing_fields)
+            )
         else:
             status = EligibilityStatus.ELIGIBLE
             match_score = 100.0
-            next_steps.append("Patient meets all I/E criteria! Schedule pre-screening trial visit and informed consent.")
+            next_steps.append(
+                "All encoded criteria are satisfied; confirm against the authoritative protocol before any enrollment decision."
+            )
 
         return TrialMatchResult(
             patient_id=patient.patient_id,
@@ -214,53 +232,55 @@ class ClinicalTrialMatcherEngine:
 
     @classmethod
     def match_patient_against_registry(
-        cls, patient: PatientClinicalProfile, registry: Optional[List[ClinicalTrialProtocol]] = None
+        cls,
+        patient: PatientClinicalProfile,
+        registry: Optional[List[ClinicalTrialProtocol]] = None,
     ) -> List[TrialMatchResult]:
-        """
-        Screen a patient against an entire clinical trial registry and rank by match score.
-        """
+        """Screen a patient against a registry and rank deterministic results."""
         if registry is None:
             registry = STANDARD_TRIAL_REGISTRY
 
         results = [cls.match_patient_to_trial(patient, trial) for trial in registry]
-        # Rank by score descending, prioritizing ELIGIBLE > INCONCLUSIVE > INELIGIBLE
         status_priority = {
             EligibilityStatus.ELIGIBLE: 3,
             EligibilityStatus.INCONCLUSIVE_MISSING_DATA: 2,
             EligibilityStatus.INELIGIBLE: 1,
         }
-        results.sort(key=lambda r: (status_priority[r.eligibility_status], r.overall_match_score_pct), reverse=True)
+        results.sort(
+            key=lambda r: (status_priority[r.eligibility_status], r.overall_match_score_pct),
+            reverse=True,
+        )
         return results
 
     @classmethod
-    def _extract_field_value(cls, patient: PatientClinicalProfile, field_path: str) -> Tuple[Any, bool]:
-        """Extract a nested field value from patient profile."""
+    def _extract_field_value(
+        cls, patient: PatientClinicalProfile, field_path: str
+    ) -> Tuple[Any, bool]:
+        """Extract a nested field value and whether it is known."""
         parts = field_path.split(".")
         root_name = parts[0]
 
-        if root_name == "age":
-            return patient.age, True
-        if root_name == "gender":
-            return patient.gender, True
-        if root_name == "diagnosis":
-            return patient.diagnosis, True
-        if root_name == "stage":
-            return patient.stage, patient.stage is not None
-        if root_name == "histology":
-            return patient.histology, patient.histology is not None
-        if root_name == "ecog_ps":
-            return patient.ecog_ps, True
-        if root_name == "lines_of_prior_therapy":
-            return patient.lines_of_prior_therapy, True
-        if root_name == "prior_therapies":
-            return patient.prior_therapies, True
-        if root_name == "comorbidities":
-            return patient.comorbidities, True
+        simple_fields = {
+            "age": patient.age,
+            "gender": patient.gender,
+            "diagnosis": patient.diagnosis,
+            "stage": patient.stage,
+            "histology": patient.histology,
+            "ecog_ps": patient.ecog_ps,
+            "lines_of_prior_therapy": patient.lines_of_prior_therapy,
+            "prior_therapies": patient.prior_therapies,
+            "comorbidities": patient.comorbidities,
+        }
+        if root_name in simple_fields:
+            value = simple_fields[root_name]
+            return value, value is not None
+
         if root_name == "biomarkers" and len(parts) > 1:
             key = parts[1]
             if key in patient.biomarkers:
                 return patient.biomarkers[key], True
             return None, False
+
         if root_name == "labs" and len(parts) > 1:
             key = parts[1]
             if key in patient.labs:
@@ -270,61 +290,108 @@ class ClinicalTrialMatcherEngine:
         return None, False
 
     @classmethod
-    def _apply_operator(cls, observed: Any, operator: CriterionOperator, expected: Any) -> bool:
-        """Evaluate logical/relational operator."""
+    def _apply_operator(
+        cls, observed: Any, operator: CriterionOperator, expected: Any
+    ) -> bool:
+        """Evaluate a supported criterion operator."""
         try:
             if operator == CriterionOperator.EQUALS:
                 return str(observed).strip().lower() == str(expected).strip().lower()
-            elif operator == CriterionOperator.NOT_EQUALS:
+            if operator == CriterionOperator.NOT_EQUALS:
                 return str(observed).strip().lower() != str(expected).strip().lower()
-            elif operator == CriterionOperator.GREATER_EQUAL:
+            if operator == CriterionOperator.GREATER_EQUAL:
                 return float(observed) >= float(expected)
-            elif operator == CriterionOperator.LESS_EQUAL:
+            if operator == CriterionOperator.LESS_EQUAL:
                 return float(observed) <= float(expected)
-            elif operator == CriterionOperator.GREATER_THAN:
+            if operator == CriterionOperator.GREATER_THAN:
                 return float(observed) > float(expected)
-            elif operator == CriterionOperator.LESS_THAN:
+            if operator == CriterionOperator.LESS_THAN:
                 return float(observed) < float(expected)
-            elif operator == CriterionOperator.IN_SET:
-                # If observed is a list, check if expected in observed or any overlap
+            if operator == CriterionOperator.RANGE_BETWEEN:
+                if not isinstance(expected, (list, tuple)) or len(expected) != 2:
+                    return False
+                lower, upper = expected
+                return float(lower) <= float(observed) <= float(upper)
+            if operator == CriterionOperator.IN_SET:
                 if isinstance(observed, list):
-                    exp_str = str(expected).lower()
-                    return any(exp_str in str(item).lower() for item in observed)
-                # If expected is a list, check if observed in expected
+                    exp_str = str(expected).strip().lower()
+                    return any(exp_str in str(item).strip().lower() for item in observed)
                 if isinstance(expected, list):
-                    obs_str = str(observed).lower()
-                    return any(obs_str == str(item).lower() or str(item).lower() in obs_str for item in expected)
-                return str(expected).lower() in str(observed).lower()
-            elif operator == CriterionOperator.NOT_IN_SET:
+                    obs_str = str(observed).strip().lower()
+                    return any(
+                        obs_str == str(item).strip().lower()
+                        or str(item).strip().lower() in obs_str
+                        for item in expected
+                    )
+                return str(expected).strip().lower() in str(observed).strip().lower()
+            if operator == CriterionOperator.NOT_IN_SET:
                 if isinstance(observed, list):
-                    exp_str = str(expected).lower()
-                    return not any(exp_str in str(item).lower() for item in observed)
+                    exp_str = str(expected).strip().lower()
+                    return not any(exp_str in str(item).strip().lower() for item in observed)
                 if isinstance(expected, list):
-                    obs_str = str(observed).lower()
-                    return not any(obs_str == str(item).lower() for item in expected)
-                return str(expected).lower() not in str(observed).lower()
-            elif operator == CriterionOperator.EXISTS:
+                    obs_str = str(observed).strip().lower()
+                    return not any(
+                        obs_str == str(item).strip().lower() for item in expected
+                    )
+                return str(expected).strip().lower() not in str(observed).strip().lower()
+            if operator == CriterionOperator.EXISTS:
                 return observed is not None
-            elif operator == CriterionOperator.NOT_EXISTS:
+            if operator == CriterionOperator.NOT_EXISTS:
                 return observed is None
         except (ValueError, TypeError):
             return False
         return False
 
 
+def _optional_int(value: Any) -> Optional[int]:
+    if value is None or value == "":
+        return None
+    return int(value)
+
+
+def _optional_text(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text else None
+
+
+def _optional_list(value: Any) -> Optional[List[str]]:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    if isinstance(value, tuple):
+        return [str(item) for item in value]
+    if isinstance(value, str):
+        text = value.strip()
+        return [text] if text else []
+    raise TypeError("Expected a list, tuple, string, or null value")
+
+
 def parse_patient_profile(data: Dict[str, Any]) -> PatientClinicalProfile:
-    """Parse dictionary to PatientClinicalProfile."""
+    """Parse a dictionary without inventing clinically meaningful defaults."""
+    if not isinstance(data, dict):
+        raise TypeError("Patient profile must be a dictionary")
+
+    biomarkers = data.get("biomarkers") or {}
+    labs = data.get("labs") or {}
+    if not isinstance(biomarkers, dict):
+        raise TypeError("'biomarkers' must be an object")
+    if not isinstance(labs, dict):
+        raise TypeError("'labs' must be an object")
+
     return PatientClinicalProfile(
-        patient_id=str(data.get("patient_id", "PT-TRIAL-001")),
-        age=int(data.get("age", 55)),
-        gender=str(data.get("gender", "unknown")),
-        diagnosis=str(data.get("diagnosis", "NSCLC")),
-        stage=data.get("stage"),
-        histology=data.get("histology"),
-        ecog_ps=int(data.get("ecog_ps", 0)),
-        biomarkers=data.get("biomarkers", {}),
-        labs=data.get("labs", {}),
-        prior_therapies=data.get("prior_therapies", []),
-        lines_of_prior_therapy=int(data.get("lines_of_prior_therapy", 0)),
-        comorbidities=data.get("comorbidities", []),
+        patient_id=str(data.get("patient_id") or "PT-UNKNOWN"),
+        age=_optional_int(data.get("age")),
+        gender=_optional_text(data.get("gender")),
+        diagnosis=_optional_text(data.get("diagnosis")),
+        stage=_optional_text(data.get("stage")),
+        histology=_optional_text(data.get("histology")),
+        ecog_ps=_optional_int(data.get("ecog_ps")),
+        biomarkers=biomarkers,
+        labs=labs,
+        prior_therapies=_optional_list(data.get("prior_therapies")),
+        lines_of_prior_therapy=_optional_int(data.get("lines_of_prior_therapy")),
+        comorbidities=_optional_list(data.get("comorbidities")),
     )
