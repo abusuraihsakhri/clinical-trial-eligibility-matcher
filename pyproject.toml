@@ -19,7 +19,7 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10"]
+dev = ["build>=1,<2", "pytest>=8,<10"]
 
 [project.scripts]
 clinical-trial-eligibility-matcher = "cli:main"
