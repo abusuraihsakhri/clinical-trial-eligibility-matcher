@@ -42,3 +42,14 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Smoke test deployed site
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --location --retry 6 --retry-delay 3 --retry-all-errors "${PAGE_URL}" -o /tmp/index.html
+          grep -Fq "Clinical Trial Eligibility Matcher" /tmp/index.html
+          curl --fail --location --retry 6 --retry-delay 3 --retry-all-errors "${PAGE_URL}app.js" -o /tmp/app.js
+          grep -Fq "initializeRuntime" /tmp/app.js
+          curl --fail --location --retry 6 --retry-delay 3 --retry-all-errors "${PAGE_URL}clinical_trial_eligibility_matcher/engine.py" -o /tmp/engine.py
+          grep -Fq "ClinicalTrialMatcherEngine" /tmp/engine.py
