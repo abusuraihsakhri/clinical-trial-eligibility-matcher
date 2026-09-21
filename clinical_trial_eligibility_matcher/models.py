@@ -77,9 +77,9 @@ class PatientClinicalProfile:
     ecog_ps: Optional[int] = None
     biomarkers: Dict[str, Any] = field(default_factory=dict)
     labs: Dict[str, float] = field(default_factory=dict)
-    prior_therapies: Optional[List[str]] = None
-    lines_of_prior_therapy: Optional[int] = None
-    comorbidities: Optional[List[str]] = None
+    prior_therapies: Optional[List[str]] = field(default_factory=list)
+    lines_of_prior_therapy: Optional[int] = 0
+    comorbidities: Optional[List[str]] = field(default_factory=list)
 
 
 @dataclass
